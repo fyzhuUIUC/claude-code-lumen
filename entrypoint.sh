@@ -5,10 +5,11 @@
 set -euo pipefail
 
 search="${CCL_SEARCH:-auto}"
+fellback=
 if [ "$search" = auto ]; then
   if [ -n "${EXA_API_KEY:-}" ]; then search=exa
   elif [ -n "${BRAVE_API_KEY:-}" ]; then search=brave
-  else search=ddg
+  else search=ddg; fellback=1
   fi
 fi
 
@@ -24,7 +25,7 @@ case "$search" in
       '{mcpServers:{search:{command:"brave-search-mcp-server",args:["--transport","stdio"],env:{BRAVE_API_KEY:$k}}}}' >"$mcp" ;;
   ddg)
     jq -n '{mcpServers:{search:{command:"duckduckgo-mcp-server"}}}' >"$mcp"
-    if [ -z "${CCL_QUIET:-}" ]; then
+    if [ -n "$fellback" ] && [ -z "${CCL_QUIET:-}" ]; then
       cat >&2 <<'MSG'
 [claude-code-lumen] Web search: DuckDuckGo (no API key; results are thinner and
   it rate-limits under heavy use). For better search, get a key and pass it in:
