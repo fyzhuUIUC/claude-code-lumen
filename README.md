@@ -56,11 +56,24 @@ under heavy use. For regular use, get an Exa or Brave key.
   client may ask for a feature Lumen refuses. Bump `CC_VERSION` in the
   Dockerfile after checking the new version against your Lumen.
 - WebSearch is denied; the MCP search tools are allowed without a prompt.
+- The key goes in as `ANTHROPIC_AUTH_TOKEN` (a Bearer header), so first-run
+  Claude Code does not ask whether to use a custom API key.
+- The Haiku, Sonnet and Opus aliases all point at your Lumen model, so the
+  auto-mode permission classifier and subagents do not ask Lumen for a Claude
+  model it does not have.
 
 ## Tested
 
 2026-09-28, Claude Code 2.1.284, Lumen `feature/anthropic-messages-api-minimal`,
 Qwen3.8-27B backend: headless (`-p`) runs answered a question that needs a live
 search correctly with each of Exa, Brave and DuckDuckGo, with no Lumen errors.
+
+Same day, Qwen3.8-Flash-Next backend (llama.cpp): headless runs of plain text,
+Write/Read/Edit, Bash, WebFetch, a subagent, and search with Exa and Brave all
+answered correctly. DuckDuckGo's search worked but its result snippet was out of
+date, so the answer was an old version. An interactive session started, ran
+Bash, search and WebFetch, and exited cleanly. In auto mode the permission
+classifier approved WebFetch and `curl` but takes 30 to 75 s per decision on this
+backend, and it timed out once ("temporarily unavailable") on a longer session.
 
 This project was written with AI coding assistance.
