@@ -57,6 +57,9 @@ case "$LUMEN_URL" in
 esac
 TTY=(-i); [ -t 0 ] && TTY+=(-t)
 
+# ANTHROPIC_AUTH_TOKEN (sent as a Bearer header) rather than ANTHROPIC_API_KEY:
+# the latter makes first-run Claude Code ask "use this API key?" with No as the
+# default, and No leads to the Anthropic login screen.
 # The four CLAUDE_CODE_* / MAX_THINKING_TOKENS settings keep Claude Code from
 # sending thinking and beta fields Lumen refuses with a 400 (see the Lumen
 # docs/guides/anthropic.md, "Claude Code").
@@ -66,7 +69,7 @@ exec docker run --rm "${TTY[@]}" "${NET[@]}" \
   -v "$STATE":/home/ccl \
   -e HOME=/home/ccl \
   -e ANTHROPIC_BASE_URL="$LUMEN_URL" \
-  -e ANTHROPIC_API_KEY="$LUMEN_API_KEY" \
+  -e ANTHROPIC_AUTH_TOKEN="$LUMEN_API_KEY" \
   -e ANTHROPIC_MODEL="$MODEL" \
   -e ANTHROPIC_SMALL_FAST_MODEL="$MODEL" \
   -e ANTHROPIC_DEFAULT_HAIKU_MODEL="$MODEL" \
