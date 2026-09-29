@@ -60,6 +60,8 @@ TTY=(-i); [ -t 0 ] && TTY+=(-t)
 # ANTHROPIC_AUTH_TOKEN (sent as a Bearer header) rather than ANTHROPIC_API_KEY:
 # the latter makes first-run Claude Code ask "use this API key?" with No as the
 # default, and No leads to the Anthropic login screen.
+# The DEFAULT_*_MODEL settings map every alias to the Lumen model: the auto-mode
+# classifier and subagents otherwise ask for a Claude model id Lumen 404s.
 # The four CLAUDE_CODE_* / MAX_THINKING_TOKENS settings keep Claude Code from
 # sending thinking and beta fields Lumen refuses with a 400 (see the Lumen
 # docs/guides/anthropic.md, "Claude Code").
@@ -73,6 +75,8 @@ exec docker run --rm "${TTY[@]}" "${NET[@]}" \
   -e ANTHROPIC_MODEL="$MODEL" \
   -e ANTHROPIC_SMALL_FAST_MODEL="$MODEL" \
   -e ANTHROPIC_DEFAULT_HAIKU_MODEL="$MODEL" \
+  -e ANTHROPIC_DEFAULT_SONNET_MODEL="$MODEL" \
+  -e ANTHROPIC_DEFAULT_OPUS_MODEL="$MODEL" \
   -e CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1 \
   -e CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1 \
   -e MAX_THINKING_TOKENS=0 \
