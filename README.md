@@ -1,12 +1,24 @@
 # claude-code-lumen
 
-Claude Code in a container, pointed at a [Lumen](https://github.com/ncsa/lumen)
-server instead of api.anthropic.com, with web search that works.
+An example of working with Claude Code through the Anthropic endpoint that
+[ncsa/lumen#75](https://github.com/ncsa/lumen/pull/75) adds to
+[Lumen](https://github.com/ncsa/lumen). It was written with AI coding assistance
+(vibe coding) for Lumen reviewers to look at, and is not maintained.
 
-Claude Code's built-in WebSearch runs inside Anthropic's service, so it cannot
-work through Lumen. This image switches it off and gives Claude Code a search
-tool through an MCP server instead: Exa or Brave if you have a key, DuckDuckGo
-(no key) otherwise.
+It runs Claude Code in a container pointed at a Lumen server instead of
+api.anthropic.com. Claude Code's built-in WebSearch runs inside Anthropic's
+service, so it cannot work through Lumen. This image switches it off and gives
+Claude Code a search tool through an MCP server instead: Exa or Brave if you
+have a key, DuckDuckGo (no key) otherwise.
+
+## Demo
+
+[demo/demo.mp4](demo/demo.mp4): a dev Lumen on the PR #75 branch with
+Qwen3.8-Flash-Next (llama.cpp on a DGX Spark) behind it. In `demo/`, Claude Code
+edits `greet.py`, searches the web for the current stable Linux kernel, and
+describes `shapes.png`.
+
+<video src="demo/demo.mp4" controls muted playsinline width="100%"></video>
 
 ## Use
 
@@ -58,6 +70,8 @@ under heavy use. For regular use, get an Exa or Brave key.
   client may ask for a feature Lumen refuses. Bump `CC_VERSION` in the
   Dockerfile after checking the new version against your Lumen.
 - WebSearch is denied; the MCP search tools are allowed without a prompt.
+- Hooks are off, because a project's `.claude/settings.json` usually points them
+  at host paths the container does not have. `CCL_HOOKS=1` keeps them.
 - The key goes in as `ANTHROPIC_AUTH_TOKEN` (a Bearer header), so first-run
   Claude Code does not ask whether to use a custom API key.
 - The Haiku, Sonnet and Opus aliases all point at your Lumen model, so the
@@ -75,7 +89,8 @@ Write/Read/Edit, Bash, WebFetch, a subagent, and search with Exa and Brave all
 answered correctly. DuckDuckGo's search worked but its result snippet was out of
 date, so the answer was an old version. An interactive session started, ran
 Bash, search and WebFetch, and exited cleanly. In auto mode the permission
-classifier approved WebFetch and `curl` but takes 30 to 75 s per decision on this
-backend, and it timed out once ("temporarily unavailable") on a longer session.
-
-This project was written with AI coding assistance.
+classifier approved WebFetch and `curl` but took 30 to 75 s per decision on this
+backend, and timed out once ("temporarily unavailable") on a longer session.
+That was before the PR kept mid-conversation system turns in place, which lets
+the backend reuse its prefix cache. With that fix, only the first one or two
+decisions of a session may time out, and later ones take about 1 s.
