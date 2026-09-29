@@ -43,5 +43,10 @@ esac
 # search tools are read-only and allowed without a prompt (headless -p runs
 # would otherwise refuse them).
 settings='{"permissions":{"deny":["WebSearch"],"allow":["mcp__search"]}}'
+# Hooks are off by default: a project's (or a mounted home's) .claude/settings.json
+# points hooks at host paths that do not exist in the container. CCL_HOOKS=1 keeps them.
+if [ -z "${CCL_HOOKS:-}" ]; then
+  settings=$(jq -c '. + {disableAllHooks: true}' <<<"$settings")
+fi
 
 exec claude --mcp-config "$mcp" --settings "$settings" "$@"
