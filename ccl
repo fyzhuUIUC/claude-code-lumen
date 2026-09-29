@@ -17,7 +17,12 @@ set -euo pipefail
 CONF="${CCL_ENV:-$HOME/.config/claude-code-lumen/env}"
 # shellcheck disable=SC1090
 # set -a: docker -e NAME only forwards exported variables.
-if [ -f "$CONF" ]; then set -a; . "$CONF"; set +a; fi
+# Values already in the environment win over the file.
+VARS="LUMEN_URL LUMEN_API_KEY LUMEN_MODEL EXA_API_KEY BRAVE_API_KEY CCL_SEARCH CCL_QUIET CCL_IMAGE CCL_STATE"
+if [ -f "$CONF" ]; then
+  saved=$(for v in $VARS; do if [ -n "${!v+x}" ]; then printf '%s=%q\n' "$v" "${!v}"; fi; done)
+  set -a; . "$CONF"; eval "$saved"; set +a
+fi
 
 MODEL="${LUMEN_MODEL:-}"
 while [ $# -gt 0 ]; do
