@@ -54,7 +54,7 @@ LUMEN_API_KEY=sk_...                     # from your Lumen Profile page
 LUMEN_MODEL=qwen3-coder                  # a model id from Lumen's /v1/models
 # EXA_API_KEY=...                        # optional, https://dashboard.exa.ai/api-keys
 # BRAVE_API_KEY=...                      # optional, https://api-dashboard.search.brave.com
-# CCL_MOUNTS=~/Desktop                   # directories to mount every time
+# CCL_MOUNTS=~/Desktop,~/data:ro          # mounted every time, comma-separated
 CONF
 chmod 600 ~/.config/claude-code-lumen/env
 ```
