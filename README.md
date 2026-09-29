@@ -1,26 +1,30 @@
 # claude-code-lumen
 
-claude-code-lumen puts Claude Code in a container and points it at NCSA's
-[Lumen](https://github.com/ncsa/lumen) instead of api.anthropic.com, so it works
-with the open models Lumen serves. The whole project is one Docker image plus a
-launcher, `ccl`: run `ccl` in any directory and you get Claude Code in a
-container, with the current directory mounted as the workspace and the rest of
-the machine invisible unless you mount it. Every request goes to Lumen and is
-billed to your own Lumen key. Before starting the container, the launcher checks
-that Lumen is reachable and the model exists.
+claude-code-lumen is our adaptation for NCSA's
+[Lumen](https://github.com/ncsa/lumen): it puts Claude Code in a container and
+points it at Lumen instead of api.anthropic.com, so it works with the open
+models Lumen serves. Lumen is a public service for UIUC: it hosts top-tier open
+models for everyone on campus, free of charge, and its default API speaks the
+OpenAI protocol. The rational choice would be to connect with projects like
+opencode, Hermes or Pi, but Codex and Claude Code are in fact used by many, and
+a large share of agent webs are built on the Anthropic SDK and the Claude Agent
+SDK, so making Lumen speak Anthropic Messages matters too.
 
 This works because of the Anthropic Messages compatible endpoint that
-[ncsa/lumen#75](https://github.com/ncsa/lumen/pull/75) (issue #61) adds to Lumen.
-Claude Code only speaks the Anthropic protocol, while Lumen's existing API
-speaks the OpenAI protocol; the endpoint translates between them.
-claude-code-lumen covers the Claude Code side on top of that: it turns off what
-Lumen would refuse and sets what needs setting. One thing needs its own fix:
-Claude Code's built-in WebSearch runs on Anthropic's servers and cannot work
-through Lumen, so it is replaced with an MCP search server that uses Exa or
-Brave if you have a key, and DuckDuckGo otherwise. The repository also serves as
-an example for Lumen reviewers of what using the endpoint looks like in
-practice. It was written with AI coding assistance (vibe coding) and is not
-maintained.
+[ncsa/lumen#75](https://github.com/ncsa/lumen/pull/75) (issue #61) adds to
+Lumen; the endpoint translates between the two protocols, and this repository
+covers the Claude Code side on top of it. The whole project is one Docker image
+plus a launcher, `ccl`: run `ccl` in any directory and you get Claude Code in a
+container, with the current directory mounted as the workspace and the rest of
+the machine invisible unless you mount it. Every request goes to Lumen and is
+billed to your own Lumen key; before starting the container, the launcher
+checks that Lumen is reachable and the model exists. One part needed separate
+handling: Claude Code's built-in WebSearch runs on Anthropic's servers and
+cannot work through Lumen, so it is replaced with an MCP search server that
+uses Exa or Brave if you have a key, and DuckDuckGo otherwise. The repository
+also serves as an example for Lumen reviewers of what using the endpoint looks
+like in practice. It was written with AI coding assistance (vibe coding) and is
+not maintained.
 
 ![ccl reads a campus photo, then searches the web to confirm it is UIUC's Foellinger Auditorium](demo/ccl-uiuc.png)
 
@@ -31,8 +35,8 @@ web, it confirmed the building is UIUC's Foellinger Auditorium. Reading images
 and searching the web, two things Claude Code could not do, or not do well,
 through Lumen, both worked in the same session.
 
-[demo/demo.mp4](demo/demo.mp4) is a shorter recording in `demo/`: Claude Code
-edits `greet.py`, searches for the current stable Linux kernel, and describes
+A shorter recording, [demo/demo.mp4](demo/demo.mp4): Claude Code edits
+`greet.py`, searches for the current stable Linux kernel, and describes
 `shapes.png`.
 
 | | |
