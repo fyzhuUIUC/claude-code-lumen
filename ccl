@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# claude-code-lumen: run Claude Code in a container against a Lumen server.
+#
+#   ccl                       interactive session in the current directory
+#   ccl -m MODEL              use another Lumen model
+#   ccl -- -p "say hi"        anything after -- goes straight to claude
+#
+# Settings come from the environment, or from ~/.config/claude-code-lumen/env:
+#   LUMEN_URL       Lumen base URL, without /v1     (required)
+#   LUMEN_API_KEY   a Lumen API key                 (required)
+#   LUMEN_MODEL     model id from Lumen's /v1/models (required, or -m)
+#   EXA_API_KEY / BRAVE_API_KEY   web search keys (optional; DuckDuckGo otherwise)
+#   CCL_SEARCH      auto | exa | brave | ddg | none
+#   CCL_IMAGE       image name (default claude-code-lumen:latest)
+set -euo pipefail
+
+CONF="${CCL_ENV:-$HOME/.config/claude-code-lumen/env}"
+# shellcheck disable=SC1090
+# set -a: docker -e NAME only forwards exported variables.
+if [ -f "$CONF" ]; then set -a; . "$CONF"; set +a; fi
+
+MODEL="${LUMEN_MODEL:-}"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -m|--model) MODEL="$2"; shift 2 ;;
+    --) shift; break ;;
+    *) break ;;
+  esac
+done
+
+: "${LUMEN_URL:?set LUMEN_URL (e.g. https://lumen.example.edu) in the env or $CONF}"
+: "${LUMEN_API_KEY:?set LUMEN_API_KEY (create one on the Lumen Profile page)}"
+: "${MODEL:?set LUMEN_MODEL or pass -m MODEL}"
+LUMEN_URL="${LUMEN_URL%/}"; LUMEN_URL="${LUMEN_URL%/v1}"
+
+# Fail here with a readable message instead of inside claude.
+models=$(curl -sf -m 10 "$LUMEN_URL/v1/models" -H "Authorization: Bearer $LUMEN_API_KEY") || {
+  echo "Lumen at $LUMEN_URL did not answer /v1/models with this key." >&2; exit 1; }
+if ! jq -e --arg m "$MODEL" '.data[] | select(.id == $m)' >/dev/null <<<"$models"; then
+  echo "Lumen has no model '$MODEL' for this key. Available:" >&2
+  jq -r '.data[].id' <<<"$models" >&2
+  exit 1
+fi
+
+STATE="${CCL_STATE:-$HOME/.local/share/claude-code-lumen}"
+mkdir -p "$STATE"
+
+# A Lumen on this machine's loopback is only reachable with the host network.
+NET=()
+case "$LUMEN_URL" in
+  http://localhost*|http://127.*) NET=(--network host) ;;
+esac
+TTY=(-i); [ -t 0 ] && TTY+=(-t)
+
+# The four CLAUDE_CODE_* / MAX_THINKING_TOKENS settings keep Claude Code from
+# sending thinking and beta fields Lumen refuses with a 400 (see the Lumen
+# docs/guides/anthropic.md, "Claude Code").
+exec docker run --rm "${TTY[@]}" "${NET[@]}" \
+  --user "$(id -u):$(id -g)" \
+  -v "$PWD":/work -w /work \
+  -v "$STATE":/home/ccl \
+  -e HOME=/home/ccl \
+  -e ANTHROPIC_BASE_URL="$LUMEN_URL" \
+  -e ANTHROPIC_API_KEY="$LUMEN_API_KEY" \
+  -e ANTHROPIC_MODEL="$MODEL" \
+  -e ANTHROPIC_SMALL_FAST_MODEL="$MODEL" \
+  -e ANTHROPIC_DEFAULT_HAIKU_MODEL="$MODEL" \
+  -e CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1 \
+  -e CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1 \
+  -e MAX_THINKING_TOKENS=0 \
+  -e CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 \
+  -e CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 \
+  -e DISABLE_AUTOUPDATER=1 \
+  -e CCL_SEARCH -e CCL_QUIET -e EXA_API_KEY -e BRAVE_API_KEY \
+  "${CCL_IMAGE:-claude-code-lumen:latest}" "$@"
