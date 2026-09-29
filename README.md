@@ -29,7 +29,9 @@ ccl -- -p "summarise README.md"          # anything after -- goes to claude
 ```
 
 The current directory is mounted at `/work`; nothing else of the host is
-visible. Claude Code's own state (login, history) lives in
+visible unless you add it: `ccl --mount ~/Desktop` mounts it at `/mnt/Desktop`
+(repeatable, `:ro` for read-only), and `CCL_MOUNTS` in the config file lists
+directories to mount every time. Claude Code's own state (login, history) lives in
 `~/.local/share/claude-code-lumen`. The launcher checks that Lumen answers and
 that the model exists before starting.
 

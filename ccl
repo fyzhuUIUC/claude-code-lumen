@@ -4,6 +4,8 @@
 #   ccl                       interactive session in the current directory
 #   ccl -m MODEL              use another Lumen model
 #   ccl -- -p "say hi"        anything after -- goes straight to claude
+#   ccl --mount ~/Desktop     also mount a directory, at /mnt/Desktop (repeatable;
+#                             append :ro for read-only)
 #
 # Settings come from the environment, or from ~/.config/claude-code-lumen/env:
 #   LUMEN_URL       Lumen base URL, without /v1     (required)
@@ -12,6 +14,7 @@
 #   EXA_API_KEY / BRAVE_API_KEY   web search keys (optional; DuckDuckGo otherwise)
 #   CCL_SEARCH      auto | exa | brave | ddg | none
 #   CCL_IMAGE       image name (default claude-code-lumen:latest)
+#   CCL_MOUNTS      directories to mount every time, comma-separated (same form as --mount)
 set -euo pipefail
 
 CONF="${CCL_ENV:-$HOME/.config/claude-code-lumen/env}"
@@ -25,9 +28,13 @@ if [ -f "$CONF" ]; then
 fi
 
 MODEL="${LUMEN_MODEL:-}"
+MOUNTS=()
+IFS=',' read -r -a _default_mounts <<<"${CCL_MOUNTS:-}"
+for m in "${_default_mounts[@]}"; do [ -n "$m" ] && MOUNTS+=("$m"); done
 while [ $# -gt 0 ]; do
   case "$1" in
     -m|--model) MODEL="$2"; shift 2 ;;
+    --mount) MOUNTS+=("$2"); shift 2 ;;
     --) shift; break ;;
     *) break ;;
   esac
@@ -57,6 +64,17 @@ case "$LUMEN_URL" in
 esac
 TTY=(-i); [ -t 0 ] && TTY+=(-t)
 
+# Extra directories: mounted at /mnt/<name> and added to what Claude Code may
+# read and write (it refuses paths outside the working directory otherwise).
+VOLS=(); ADD_DIRS=()
+for m in "${MOUNTS[@]}"; do
+  src="${m%:ro}"; mode=""; [ "$src" != "$m" ] && mode=":ro"
+  src="${src/#\~/$HOME}"
+  [ -d "$src" ] || { echo "--mount: not a directory: $src" >&2; exit 1; }
+  src="$(cd "$src" && pwd)"; dst="/mnt/$(basename "$src")"
+  VOLS+=(-v "$src:$dst$mode"); ADD_DIRS+=(--add-dir "$dst")
+done
+
 # ANTHROPIC_AUTH_TOKEN (sent as a Bearer header) rather than ANTHROPIC_API_KEY:
 # the latter makes first-run Claude Code ask "use this API key?" with No as the
 # default, and No leads to the Anthropic login screen.
@@ -67,7 +85,7 @@ TTY=(-i); [ -t 0 ] && TTY+=(-t)
 # docs/guides/anthropic.md, "Claude Code").
 exec docker run --rm "${TTY[@]}" "${NET[@]}" \
   --user "$(id -u):$(id -g)" \
-  -v "$PWD":/work -w /work \
+  -v "$PWD":/work -w /work "${VOLS[@]}" \
   -v "$STATE":/home/ccl \
   -e HOME=/home/ccl \
   -e ANTHROPIC_BASE_URL="$LUMEN_URL" \
@@ -84,4 +102,4 @@ exec docker run --rm "${TTY[@]}" "${NET[@]}" \
   -e CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 \
   -e DISABLE_AUTOUPDATER=1 \
   -e CCL_SEARCH -e CCL_QUIET -e CCL_HOOKS -e EXA_API_KEY -e BRAVE_API_KEY \
-  "${CCL_IMAGE:-claude-code-lumen:latest}" "$@"
+  "${CCL_IMAGE:-claude-code-lumen:latest}" "${ADD_DIRS[@]}" "$@"
