@@ -11,8 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /uvx /usr/local/bin/
 
 # Pinned: Lumen refuses unknown anthropic-beta values, and a newer Claude Code
-# may send one. 2.1.284 passed scripts/anthropic_smoke.py on 2026-09-28.
-ARG CC_VERSION=2.1.284
+# may send one. 2.1.304 passed scripts/anthropic_smoke.py (Lumen PR #75 at b57cb39)
+# on 2026-10-20.
+ARG CC_VERSION=2.1.304
 ARG EXA_MCP_VERSION=3.4.1
 ARG BRAVE_MCP_VERSION=2.1.4
 RUN npm install -g @anthropic-ai/claude-code@${CC_VERSION} \

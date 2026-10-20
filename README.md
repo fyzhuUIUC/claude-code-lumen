@@ -98,7 +98,7 @@ heavy use; for regular use, get an Exa or Brave key.
   cannot go through Lumen. It is denied and an MCP search server takes its
   place, choosing Exa, Brave or DuckDuckGo in that order by which key is set.
   The search tools are allowed without a prompt.
-- **Pins Claude Code (2.1.284) and turns off auto-update.** A newer version may
+- **Pins Claude Code (2.1.304) and turns off auto-update.** A newer version may
   ask for a beta Lumen does not know yet. To change versions, test the new one
   against your Lumen first, then bump `CC_VERSION` in the Dockerfile.
 - **Turns hooks off by default.** A project's `.claude/settings.json` often points
